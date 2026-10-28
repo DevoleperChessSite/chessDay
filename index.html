@@ -1,1 +1,13 @@
+def print_chess_board():
+  for row in range(8):
+    line = ""
+    for col in range(8):
+      # Если сумма индексов четная — белая клетка, нечетная — черная
+      if (row + col) % 2 == 0:
+        line += "⬜ "  # Белая клетка
+      else:
+        line += "⬛ "  # Черная клетка
+    print(line)
 
+
+print_chess_board()
