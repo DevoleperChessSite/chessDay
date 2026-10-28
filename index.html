@@ -1,676 +1,257 @@
-def print_chess_board():
-  for row in range(8):
-    line = ""
-    for col in range(8):
-      # Если сумма индексов четная — белая клетка, нечетная — черная
-      if (row + col) % 2 == 0:
-        line += "⬜ "  # Белая клетка
-      else:
-        line += "⬛ "  # Черная клетка
-    print(line)
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChessDay — Играй в шахматы 2026 </title>
 
+    <!-- Chess.js для базовой логики доски на главной -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 
-print_chess_board()
-import tkinter as tk
-from tkinter import messagebox
+    <style>
+        :root {
+            --bg-main: #0a0a12;
+            --bg-header: #121212;
+            --bg-glass: rgba(255, 255, 255, 0.02);
+            --text-white: #f5f5f5;
+            --text-muted: #a0a0a0;
+            --accent-gradient: linear-gradient(135deg, #10b981, #3b82f6);
+            --accent-green: #10b981;
+            --board-light: #f0d9b5;
+            --board-dark: #b58863;
+            --border: #2b2b2b;
+        }
 
-# Начальная расстановка (заглавные — белые, строчные — черные)
-STARTING_BOARD = [
-    ["r", "n", "b", "q", "k", "b", "n", "r"],
-    ["p", "p", "p", "p", "p", "p", "p", "p"],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["P", "P", "P", "P", "P", "P", "P", "P"],
-    ["R", "N", "B", "Q", "K", "B", "N", "R"]
-]
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-# Юникод-символы для красивого отображения фигур
-PIECE_SYMBOLS = {
-    "R": "♜", "N": "♞", "B": "♝", "Q": "♛", "K": "♚", "P": "♟",
-    "r": "♖", "n": "♘", "b": "♗", "q": "♕", "k": "♔", "p": "♙"
-}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-white);
+            overflow-x: hidden;
+        }
 
-class TkChess:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Шахматы (Tkinter)")
-        
-        self.board = [row[:] for row in STARTING_BOARD]
-        self.selected_square = None
-        self.white_to_move = True
-        
-        # Размеры доски
-        self.cell_size = 70
-        self.canvas = tk.Canvas(root, width=self.cell_size*8, height=self.cell_size*8)
-        self.canvas.pack()
-        
-        # Привязка клика мыши
-        self.canvas.bind("<Button-1>", self.on_click)
-        
-        self.draw_game()
+        /* === 1. ШАПКА (HEADER) === */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: var(--bg-header);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
 
-    def draw_game(self):
-        """Очищает экран и полностью перерисовывает доску и фигуры."""
-        self.canvas.delete("all")
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-left: 30px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-white);
+        }
+
+        /* === 2. ГЕРОЙ-СЕКЦИЯ (ЦЕНТР ЭКРАНА) === */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+            position: relative;
+        }
+
+        .hero-glass {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 30px 50px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        /* Кнопка ИГРАТЬ */
+        .btn-play {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-play:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-play:active {
+            transform: translateY(-2px);
+        }
+
+        /* === 3. ДОСКА НА ГЛАВНОЙ (ДЕКОР) */
+        .hero-board {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 200px;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        #hero-chessboard {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+
+        .hero-square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+        }
+
+        .hero-light { background: var(--board-light); }
+        .hero-dark { background: var(--board-dark); }
+
+        .hero-piece {
+            transition: transform 0.3s ease;
+        }
+
+        /* === АДАПТИВНОСТЬ === */
+        @media (max-width: 768px) {
+            .header { padding: 0 20px; }
+            h1 { font-size: 2.2rem; }
+            .hero-glass { padding: 40px 20px; }
+            .hero-board { width: 150px; height: 150px; right: 10px; bottom: 10px; }
+            #hero-chessboard { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ШАПКА -->
+    <header class="header">
+        <div class="logo">♟ ChessDay</div>
+        <nav class="nav-links">
+            <a href="#">Играть</a>
+            <a href="#">Задачи</a>
+            <a href="#">Просмотр</a>
+            <a href="#">Сообщество</a>
+            <a href="#">Вход</a>
+            <a href="#">Регистрация</a>
+        </nav>
+    </header>
+
+    <!-- ГЕРОЙ СЕКЦИЯ -->
+    <section class="hero">
+        <div class="hero-glass">
+            <h1>Твоя следующая победа</h1>
+            <p>Быстрые партии, турниры и глубокий анализ. Играйте бесплатно без ограничений.</p>
+            <a href="game.html" class="btn-play">
+                ▶️ Играть сейчас
+            </a>
+        </div>
+    </section>
+
+    <!-- Декоративная доска в углу -->
+    <div class="hero-board">
+        <div id="hero-chessboard"></div>
+    </div>
+
+    <script>
+        // Логика для маленькой декоративной доски в углу
+        const heroGame = new Chess();
         
-        # Цвета клеток
-        light_color = "#F0D9B5"
-        dark_color = "#B58863"
-        highlight_color = "#829769"
-        
-        for row in range(8):
-            for col in range(8):
-                # Координаты квадрата
-                x1, y1 = col * self.cell_size, row * self.cell_size
-                x2, y2 = x1 + self.cell_size, y1 + self.cell_size
-                
-                # Определяем цвет клетки
-                if self.selected_square == (row, col):
-                    color = highlight_color
-                else:
-                    color = light_color if (row + col) % 2 == 0 else dark_color
-                
-                # Рисуем клетку
-                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
-                
-                # Рисуем фигуру, если она есть
-                piece = self.board[row][col]
-                if piece:
-                    symbol = PIECE_SYMBOLS.get(piece, "")
-                    # Белые фигуры делаем черными (так как юникод-символы заполненные), 
-                    # а черные — серыми, чтобы они хорошо читались на доске
-                    text_color = "#000000" if piece.isupper() else "#4a4a4a"
+        // Расставим фигуры для красивой картинки (начало партии)
+        const startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+        heroGame.load(startFen);
+
+        const files = ["a","b","c","d","e","f","g","h"];
+        const pieceSymbols = {
+            p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
+            P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
+        };
+
+        function renderHeroBoard() {
+            const boardEl = document.getElementById('hero-chessboard');
+            boardEl.innerHTML = "";
+            const board = heroGame.board();
+
+            for (let r = 7; r >= 0; r--) {
+                for (let c = 0; c < 8; c++) {
+                    const square = files[c] + (r + 1);
+                    const piece = board[r][c];
+                    const el = document.createElement("div");
                     
-                    self.canvas.create_text(
-                        x1 + self.cell_size // 2, 
-                        y1 + self.cell_size // 2, 
-                        text=symbol, 
-                        font=("Arial", 36), 
-                        fill=text_color
-                    )
+                    const isLight = (r + c) % 2 === 0;
+                    el.className = `hero-square ${isLight ? 'hero-light' : 'hero-dark'}`;
 
-    def on_click(self, event):
-        """Логика обработки нажатия на доску."""
-        col = event.x // self.cell_size
-        row = event.y // self.cell_size
-        
-        # Защита от кликов мимо доски
-        if not (0 <= row < 8 and 0 <= col < 8):
-            return
+                    if (piece) {
+                        const span = document.createElement("span");
+                        span.className = "hero-piece";
+                        span.textContent = pieceSymbols[piece.type + piece.color.toUpperCase()];
+                        el.appendChild(span);
+                    }
+                    boardEl.appendChild(el);
+                }
+            }
+        }
 
-        clicked_piece = self.board[row][col]
-
-        if self.selected_square:
-            sel_row, sel_col = self.selected_square
-            moving_piece = self.board[sel_row][sel_col]
-            
-            # Отмена выбора при повторном клике
-            if (sel_row, sel_col) == (row, col):
-                self.selected_square = None
-                self.draw_game()
-                return
-
-            # Проверка: нельзя бить свои же фигуры
-            if clicked_piece and (clicked_piece.isupper() == moving_piece.isupper()):
-                # Переключаем выбор на новую свою фигуру
-                self.selected_square = (row, col)
-                self.draw_game()
-                return
-
-            # Совершаем ход
-            self.board[row][col] = moving_piece
-            self.board[sel_row][sel_col] = ""
-            
-            # Передаем ход и снимаем выделение
-            self.white_to_move = not self.white_to_move
-            self.selected_square = None
-            self.draw_game()
-        else:
-            # Выбираем фигуру, если наступил её ход
-            if clicked_piece:
-                is_white = clicked_piece.isupper()
-                if is_white == self.white_to_move:
-                    self.selected_square = (row, col)
-                    self.draw_game()
-
-# Запуск приложения
-if __name__ == "__main__":
-    window = tk.Tk()
-    game = TkChess(window)
-    window.mainloop()
-          import tkinter as tk
-from tkinter import messagebox
-
-# Начальное расположение фигур (Заглавные - Белые, строчные - Черные)
-STARTING_BOARD = [
-    ["r", "n", "b", "q", "k", "b", "n", "r"],
-    ["p", "p", "p", "p", "p", "p", "p", "p"],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["P", "P", "P", "P", "P", "P", "P", "P"],
-    ["R", "N", "B", "Q", "K", "B", "N", "R"]
-]
-
-# Юникод-символы фигур
-PIECE_SYMBOLS = {
-    "R": "♜", "N": "♞", "B": "♝", "Q": "♛", "K": "♚", "P": "♟",
-    "r": "♖", "n": "♘", "b": "♗", "q": "♕", "k": "♔", "p": "♙"
-}
-
-class ChessGameRules:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Шахматы с правилами")
-        
-        self.board = [row[:] for row in STARTING_BOARD]
-        self.selected = None  # Координаты выбранной фигуры (row, col)
-        self.white_to_move = True  # Ход белых
-        
-        self.cell_size = 70
-        self.canvas = tk.Canvas(root, width=self.cell_size*8, height=self.cell_size*8)
-        self.canvas.pack()
-        
-        self.canvas.bind("<Button-1>", self.on_click)
-        self.draw_board()
-
-    def draw_board(self):
-        """Отрисовка доски и фигур."""
-        self.canvas.delete("all")
-        for row in range(8):
-            for col in range(8):
-                x1, y1 = col * self.cell_size, row * self.cell_size
-                x2, y2 = x1 + self.cell_size, y1 + self.cell_size
-                
-                # Подсветка выбранной клетки
-                if self.selected == (row, col):
-                    color = "#829769"
-                else:
-                    color = "#F0D9B5" if (row + col) % 2 == 0 else "#B58863"
-                
-                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
-                
-                piece = self.board[row][col]
-                if piece:
-                    symbol = PIECE_SYMBOLS.get(piece, "")
-                    text_color = "#000000" if piece.isupper() else "#4a4a4a"
-                    self.canvas.create_text(
-                        x1 + self.cell_size//2, y1 + self.cell_size//2,
-                        text=symbol, font=("Arial", 36), fill=text_color
-                    )
-
-    def is_valid_move(self, start, end):
-        """Проверка базовых правил движения фигур."""
-        r1, c1 = start
-        r2, c2 = end
-        piece = self.board[r1][c1]
-        target = self.board[r2][c2]
-        
-        # Нельзя ходить в ту же клетку
-        if start == end:
-            return False
-            
-        # Нельзя брать фигуру своего цвета
-        if target and target.isupper() == piece.isupper():
-            return False
-
-        dr = r2 - r1
-        dc = c2 - c1
-        abs_dr = abs(dr)
-        abs_dc = abs(dc)
-        
-        piece_type = piece.upper()
-
-        # --- ПЕШКА ---
-        if piece_type == "P":
-            direction = -1 if piece.isupper() else 1
-            start_row = 6 if piece.isupper() else 1
-            
-            # Ход вперед на 1 клетку
-            if dc == 0 and dr == direction and target == "":
-                return True
-            # Ход вперед на 2 клетки со стартовой позиции
-            if dc == 0 and dr == 2 * direction and r1 == start_row and target == "":
-                # Проверяем, свободна ли промежуточная клетка
-                if self.board[r1 + direction][c1] == "":
-                    return True
-            # Взятие по диагонали
-            if abs_dc == 1 and dr == direction and target != "":
-                return True
-            return False
-
-        # --- КОНЬ ---
-        if piece_type == "N":
-            return (abs_dr == 2 and abs_dc == 1) or (abs_dr == 1 and abs_dc == 2)
-
-        # --- СЛОН, ЛАДЬЯ, ФЕРЗЬ (Проверка препятствий на пути) ---
-        if piece_type in ("B", "R", "Q"):
-            # Проверка направления движения
-            if piece_type == "B" and abs_dr != abs_dc:
-                return False
-            if piece_type == "R" and dc != 0 and dr != 0:
-                return False
-            if piece_type == "Q" and abs_dr != abs_dc and dc != 0 and dr != 0:
-                return False
-                
-            # Шаги для проверки пути
-            step_r = 0 if dr == 0 else (1 if dr > 0 else -1)
-            step_c = 0 if dc == 0 else (1 if dc > 0 else -1)
-            
-            curr_r, curr_c = r1 + step_r, c1 + step_c
-            while (curr_r, curr_c) != (r2, c2):
-                if self.board[curr_r][curr_c] != "":
-                    return False  # На пути стоит фигура
-                curr_r += step_r
-                curr_c += step_c
-            return True
-
-        # --- КОРОЛЬ ---
-        if piece_type == "K":
-            return abs_dr <= 1 and abs_dc <= 1
-
-        return False
-
-    def on_click(self, event):
-        col = event.x // self.cell_size
-        row = event.y // self.cell_size
-        
-        if not (0 <= row < 8 and 0 <= col < 8):
-            return
-
-        clicked_piece = self.board[row][col]
-
-        if self.selected:
-            r1, c1 = self.selected
-            
-            # Если кликнули на другую свою фигуру — переключаем выбор на неё
-            if clicked_piece and clicked_piece.isupper() == self.board[r1][c1].isupper():
-                self.selected = (row, col)
-                self.draw_board()
-                return
-                
-            # Проверяем правила хода
-            if self.is_valid_move(self.selected, (row, col)):
-                # Делаем ход
-                self.board[row][col] = self.board[r1][c1]
-                self.board[r1][c1] = ""
-                self.white_to_move = not self.white_to_move
-                self.selected = None
-            else:
-                # Ошибка: неверный ход
-                self.selected = None
-            self.draw_board()
-        else:
-            # Выбор фигуры в соответствии с очередью хода
-            if clicked_piece:
-                is_white = clicked_piece.isupper()
-                if is_white == self.white_to_move:
-                    self.selected = (row, col)
-                    self.draw_board()
-          import tkinter as tk
-from tkinter import messagebox
-
-STARTING_BOARD = [
-    ["r", "n", "b", "q", "k", "b", "n", "r"],
-    ["p", "p", "p", "p", "p", "p", "p", "p"],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["P", "P", "P", "P", "P", "P", "P", "P"],
-    ["R", "N", "B", "Q", "K", "B", "N", "R"]
-]
-
-PIECE_SYMBOLS = {
-    "R": "♜", "N": "♞", "B": "♝", "Q": "♛", "K": "♚", "P": "♟",
-    "r": "♖", "n": "♘", "b": "♗", "q": "♕", "k": "♔", "p": "♙"
-}
-
-class AdvancedChess:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Ультимативные Шахматы")
-        
-        self.board = [row[:] for row in STARTING_BOARD]
-        self.selected = None
-        self.white_to_move = True
-        
-        # Для рокировки: отслеживаем, двигались ли короли и ладьи
-        self.moved_pieces = set() # Хранит кортежи стартовых позиций, которые сдвинулись
-        # Для взятия на проходе: хранит координаты пешки, которая только что сходила на 2 клетки
-        self.en_passant_target = None 
-        
-        # Списки съеденных фигур
-        self.captured_white = []
-        self.captured_black = []
-        
-        # Таймеры (в секундах) — по 10 минут
-        self.time_white = 600
-        self.time_black = 600
-        self.game_over = False
-        
-        self.cell_size = 70
-        
-        # Главный контейнер
-        self.main_frame = tk.Frame(root)
-        self.main_frame.pack(padx=10, pady=10)
-        
-        # Левая панель: Инфо и Часы
-        self.side_frame = tk.Frame(self.main_frame)
-        self.side_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
-        
-        self.turn_label = tk.Label(self.side_frame, text="Ход: БЕЛЫЕ", font=("Arial", 14, "bold"))
-        self.turn_label.pack(pady=5)
-        
-        self.timer_white_label = tk.Label(self.side_frame, text="Белые: 10:00", font=("Arial", 12))
-        self.timer_white_label.pack(pady=2)
-        
-        self.timer_black_label = tk.Label(self.side_frame, text="Черные: 10:00", font=("Arial", 12))
-        self.timer_black_label.pack(pady=2)
-        
-        # Панели съеденных фигур
-        tk.Label(self.side_frame, text="Съедено белых:", font=("Arial", 10, "bold")).pack(pady=(10, 0))
-        self.cap_white_label = tk.Label(self.side_frame, text="", font=("Arial", 16))
-        self.cap_white_label.pack()
-        
-        tk.Label(self.side_frame, text="Съедено черных:", font=("Arial", 10, "bold")).pack(pady=(10, 0))
-        self.cap_black_label = tk.Label(self.side_frame, text="", font=("Arial", 16))
-        self.cap_black_label.pack()
-        
-        # Кнопка перезапуска
-        self.restart_btn = tk.Button(self.side_frame, text="Заново", command=self.reset_game)
-        self.restart_btn.pack(side=tk.BOTTOM, pady=10)
-        
-        # Холст для доски
-        self.canvas = tk.Canvas(self.main_frame, width=self.cell_size*8, height=self.cell_size*8)
-        self.canvas.pack(side=tk.RIGHT)
-        
-        self.canvas.bind("<Button-1>", self.on_click)
-        
-        self.draw_board()
-        self.update_timers() # Запуск отсчета времени
-
-    def draw_board(self):
-        self.canvas.delete("all")
-        for row in range(8):
-            for col in range(8):
-                x1, y1 = col * self.cell_size, row * self.cell_size
-                x2, y2 = x1 + self.cell_size, y1 + self.cell_size
-                
-                if self.selected == (row, col):
-                    color = "#829769"
-                else:
-                    color = "#F0D9B5" if (row + col) % 2 == 0 else "#B58863"
-                
-                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
-                
-                piece = self.board[row][col]
-                if piece:
-                    symbol = PIECE_SYMBOLS.get(piece, "")
-                    text_color = "#000000" if piece.isupper() else "#4a4a4a"
-                    self.canvas.create_text(
-                        x1 + self.cell_size//2, y1 + self.cell_size//2,
-                        text=symbol, font=("Arial", 36), fill=text_color
-                    )
-        
-        # Обновление текста съеденных фигур
-        self.cap_white_label.config(text=" ".join([PIECE_SYMBOLS[p] for p in self.captured_white]))
-        self.cap_black_label.config(text=" ".join([PIECE_SYMBOLS[p] for p in self.captured_black]))
-
-    def is_valid_move(self, start, end, simulate=False):
-        r1, c1 = start
-        r2, c2 = end
-        piece = self.board[r1][c1]
-        target = self.board[r2][c2]
-        
-        if start == end: return False
-        if target and target.isupper() == piece.isupper(): return False
-
-        dr, dc = r2 - r1, c2 - c1
-        abs_dr, abs_dc = abs(dr), abs(dc)
-        piece_type = piece.upper()
-
-        # ПЕШКА
-        if piece_type == "P":
-            direction = -1 if piece.isupper() else 1
-            start_row = 6 if piece.isupper() else 1
-            
-            # Обычный ход вперед
-            if dc == 0 and dr == direction and target == "":
-                return True
-            # Двойной ход
-            if dc == 0 and dr == 2 * direction and r1 == start_row and target == "":
-                if self.board[r1 + direction][c1] == "":
-                    return True
-            # Обычное взятие
-            if abs_dc == 1 and dr == direction and target != "":
-                return True
-            # Взятие на проходе
-            if abs_dc == 1 and dr == direction and target == "" and self.en_passant_target == (r1, c2):
-                return True
-            return False
-
-        # КОНЬ
-        if piece_type == "N":
-            return (abs_dr == 2 and abs_dc == 1) or (abs_dr == 1 and abs_dc == 2)
-
-        # СЛОН, ЛАДЬЯ, ФЕРЗЬ
-        if piece_type in ("B", "R", "Q"):
-            if piece_type == "B" and abs_dr != abs_dc: return False
-            if piece_type == "R" and dc != 0 and dr != 0: return False
-            if piece_type == "Q" and abs_dr != abs_dc and dc != 0 and dr != 0: return False
-                
-            step_r = 0 if dr == 0 else (1 if dr > 0 else -1)
-            step_c = 0 if dc == 0 else (1 if dc > 0 else -1)
-            
-            curr_r, curr_c = r1 + step_r, c1 + step_c
-            while (curr_r, curr_c) != (r2, c2):
-                if self.board[curr_r][curr_c] != "": return False
-                curr_r += step_r
-                curr_c += step_c
-            return True
-
-        # КОРОЛЬ
-        if piece_type == "K":
-            # Обычный ход
-            if abs_dr <= 1 and abs_dc <= 1:
-                return True
-            
-            # РОКИРОВКА (только если не симуляция)
-            if not simulate and dr == 0 and abs_dc == 2:
-                # Фигуры не должны были двигаться ранее
-                if start in self.moved_pieces: return False
-                
-                # Определяем ладью
-                rook_c = 7 if dc > 0 else 0
-                rook_start = (r1, rook_c)
-                if rook_start in self.moved_pieces or self.board[r1][rook_c].upper() != "R": return False
-                
-                # Путь должен быть чист
-                step = 1 if dc > 0 else -1
-                curr_c = c1 + step
-                while curr_c != rook_c:
-                    if self.board[r1][curr_c] != "": return False
-                    curr_c += step
-                return True
-                
-        return False
-
-    def on_click(self, event):
-        if self.game_over: return
-        
-        col = event.x // self.cell_size
-        row = event.y // self.cell_size
-        if not (0 <= row < 8 and 0 <= col < 8): return
-
-        clicked_piece = self.board[row][col]
-
-        if self.selected:
-            r1, c1 = self.selected
-            moving_piece = self.board[r1][c1]
-            
-            if clicked_piece and clicked_piece.isupper() == moving_piece.isupper():
-                self.selected = (row, col)
-                self.draw_board()
-                return
-                
-            if self.is_valid_move(self.selected, (row, col)):
-                # Логика взятия на проходе
-                if moving_piece.upper() == "P" and abs(c1 - col) == 1 and self.board[row][col] == "":
-                    captured = self.board[r1][col]
-                    if captured.isupper(): self.captured_white.append(captured)
-                    else: self.captured_black.append(captured)
-                    self.board[r1][col] = ""
-
-                # Логика рокировки (перемещение ладьи)
-                if moving_piece.upper() == "K" and abs(c1 - col) == 2:
-                    rook_from_c = 7 if col > c1 else 0
-                    rook_to_c = col - 1 if col > c1 else col + 1
-                    self.board[row][rook_to_c] = self.board[row][rook_from_c]
-                    self.board[row][rook_from_c] = ""
-
-                # Обычное взятие в список съеденных
-                if self.board[row][col] != "":
-                    target = self.board[row][col]
-                    if target.isupper(): self.captured_white.append(target)
-                    else: self.captured_black.append(target)
-
-                # Выполняем ход фигурой
-                self.board[row][col] = moving_piece
-                self.board[r1][c1] = ""
-                
-                # Фиксация перемещения для рокировки
-                self.moved_pieces.add(self.selected)
-
-                # Взятие на проходе: если пешка прыгнула на 2 клетки, запоминаем её
-                if moving_piece.upper() == "P" and abs(r1 - row) == 2:
-                    self.en_passant_target = (row, col)
-                else:
-                    self.en_passant_target = None
-
-                # Превращение пешки (Авто-Ферзь при достижении края)
-                if moving_piece == "P" and row == 0: self.board[row][col] = "Q"
-                if moving_piece == "p" and row == 7: self.board[row][col] = "q"
-
-                # Смена стороны
-          import tkinter as tk
-
-# Стартовое расположение фигур
-STARTING_BOARD = [
-    ["r", "n", "b", "q", "k", "b", "n", "r"],
-    ["p", "p", "p", "p", "p", "p", "p", "p"],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["",  "",  "",  "",  "",  "",  "",  ""],
-    ["P", "P", "P", "P", "P", "P", "P", "P"],
-    ["R", "N", "B", "Q", "K", "B", "N", "R"]
-]
-
-PIECE_SYMBOLS = {
-    "R": "♜", "N": "♞", "B": "♝", "Q": "♛", "K": "♚", "P": "♟",
-    "r": "♖", "n": "♘", "b": "♗", "q": "♕", "k": "♔", "p": "♙"
-}
-
-class ChessGameRules:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Шахматы")
-        self.board = [row[:] for row in STARTING_BOARD]
-        self.selected = None
-        self.white_to_move = True
-        self.cell_size = 70
-        
-        self.canvas = tk.Canvas(root, width=self.cell_size*8, height=self.cell_size*8)
-        self.canvas.pack()
-        self.canvas.bind("<Button-1>", self.on_click)
-        self.draw_board()
-
-    def draw_board(self):
-        self.canvas.delete("all")
-        for row in range(8):
-            for col in range(8):
-                x1, y1 = col * self.cell_size, row * self.cell_size
-                x2, y2 = x1 + self.cell_size, y1 + self.cell_size
-                
-                # Подсветка выбранной фигуры зелёным
-                color = "#829769" if self.selected == (row, col) else ("#F0D9B5" if (row + col) % 2 == 0 else "#B58863")
-                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
-                
-                piece = self.board[row][col]
-                if piece:
-                    symbol = PIECE_SYMBOLS.get(piece, "")
-                    text_color = "#000000" if piece.isupper() else "#4a4a4a"
-                    self.canvas.create_text(x1 + self.cell_size//2, y1 + self.cell_size//2, text=symbol, font=("Arial", 36), fill=text_color)
-
-    def is_valid_move(self, start, end):
-        r1, c1 = start
-        r2, c2 = end
-        piece = self.board[r1][c1]
-        target = self.board[r2][c2]
-        
-        if start == end: return False
-        if target and target.isupper() == piece.isupper(): return False
-
-        dr, dc = r2 - r1, c2 - c1
-        abs_dr, abs_dc = abs(dr), abs(dc)
-        p_type = piece.upper()
-
-        if p_type == "P": # Пешка
-            dir_p = -1 if piece.isupper() else 1
-            if dc == 0 and dr == dir_p and target == "": return True
-            if dc == 0 and dr == 2 * dir_p and r1 == (6 if piece.isupper() else 1) and target == "" and self.board[r1 + dir_p][c1] == "": return True
-            if abs_dc == 1 and dr == dir_p and target != "": return True
-            return False
-
-        if p_type == "N": return (abs_dr == 2 and abs_dc == 1) or (abs_dr == 1 and abs_dc == 2) # Конь
-        if p_type == "K": return abs_dr <= 1 and abs_dc <= 1 # Король
-
-        if p_type in ("B", "R", "Q"): # Слон, Ладья, Ферзь
-            if p_type == "B" and abs_dr != abs_dc: return False
-            if p_type == "R" and dc != 0 and dr != 0: return False
-            if p_type == "Q" and abs_dr != abs_dc and dc != 0 and dr != 0: return False
-            
-            step_r = 0 if dr == 0 else (1 if dr > 0 else -1)
-            step_c = 0 if dc == 0 else (1 if dc > 0 else -1)
-            curr_r, curr_c = r1 + step_r, c1 + step_c
-            while (curr_r, curr_c) != (r2, c2):
-                if self.board[curr_r][curr_c] != "": return False
-                curr_r += step_r; curr_c += step_c
-            return True
-        return False
-
-    def on_click(self, event):
-        col, row = event.x // self.cell_size, event.y // self.cell_size
-        if not (0 <= row < 8 and 0 <= col < 8): return
-        clicked = self.board[row][col]
-
-        if self.selected:
-            r1, c1 = self.selected
-            if clicked and clicked.isupper() == self.board[r1][c1].isupper():
-                self.selected = (row, col)
-            elif self.is_valid_move(self.selected, (row, col)):
-                self.board[row][col] = self.board[r1][c1]
-                self.board[r1][c1] = ""
-                self.white_to_move = not self.white_to_move
-                self.selected = None
-            else:
-                self.selected = None
-            self.draw_board()
-        else:
-            if clicked and clicked.isupper() == self.white_to_move:
-                self.selected = (row, col)
-                self.draw_board()
-
-if __name__ == "__main__":
-    window = tk.Tk()
-    game = ChessGameRules(window)
-    window.mainloop()
-
-if __name__ == "__main__":
-    window = tk.Tk()
-    game = ChessGameRules(window)
-    window.mainloop()
+        renderHeroBoard();
+    </script>
+</body>
+</html>
