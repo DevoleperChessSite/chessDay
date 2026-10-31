@@ -235,9 +235,11 @@
                 for (let c = 0; c < 8; c++) {
                     const square = files[c] + (r + 1);
                     const piece = board[r][c];
-                    const el = document.createElement("div");
+                    const el = document.createElement("div"); patch-1
                     
                     const isLight = (r + c) % 2 === 0;
+const isLight = (r + c) % 2 === 0;
+ main
                     el.className = `hero-square ${isLight ? 'hero-light' : 'hero-dark'}`;
 
                     if (piece) {
@@ -247,6 +249,66 @@
                         el.appendChild(span);
                     }
                     boardEl.appendChild(el);
+ patch-1
+               <!-- Элементы интерфейса чата -->
+<div id="chat-container">
+    <h2>Живой чат</h2>
+    <div id="chat-messages" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
+        <!-- Здесь будут появляться сообщения -->
+    </div>
+    <div id="chat-controls">
+        <input type="text" id="chat-input" placeholder="Войдите, чтобы писать в чат..." disabled />
+        <button id="send-btn" disabled>Отправить</button>
+    </div>
+</div>
+
+<!-- Подключение Socket.io клиента -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    // Подключение к серверу WebSocket
+    const socket = io();
+
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // Имитация авторизации (для примера работы блокировки ввода)
+    // В реальном приложении статус должен приходить от вашей системы аутентификации
+    let isAuthenticated = true; 
+
+    if (isAuthenticated) {
+        chatInput.disabled = false;
+        chatInput.placeholder = "Введите сообщение...";
+        sendBtn.disabled = false;
+    }
+
+    // Функция отправки сообщения
+    function sendMessage() {
+        const text = chatInput.value.trim();
+        if (text) {
+            // Отправляем событие на сервер
+            socket.emit('chatMessage', { text: text });
+            chatInput.value = '';
+        }
+    }
+
+    // Слушаем клик по кнопке и нажатие Enter
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // Получение сообщения от сервера и вывод на экран
+    socket.on('message', (message) => {
+        const msgElement = document.createElement('div');
+        msgElement.innerHTML = `<strong>${message.user}:</strong> ${message.text}`;
+        chatMessages.appendChild(msgElement);
+        
+        // Автопрокрутка чата вниз
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+</script>
+ main
                 }
             }
         }
